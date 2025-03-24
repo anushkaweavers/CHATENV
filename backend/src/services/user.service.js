@@ -1,5 +1,6 @@
 const httpStatus = require('http-status');
-const { User } = require('../models');
+const bcrypt = require('bcryptjs');
+const { User, SavedMovies, GroupedCollections, Ratings, Posts } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 /**
@@ -8,21 +9,32 @@ const ApiError = require('../utils/ApiError');
  * @returns {Promise<User>}
  */
 const createUser = async (userBody) => {
-  if (await User.isEmailTaken(userBody.email)) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
-  }
-  return User.create(userBody);
-};
+  try {
+    const existingUser = await User.findOne({ email: userBody.email });
+    if (existingUser) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Email already exists, try again with a different email');
+    }
 
+    const newUser = new User(userBody);
+    await newUser.save();
+    return newUser;
+  } catch (error) {
+    if (error.code === 11000) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Duplicate key error: Email already exists');
+    }
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message || 'User creation failed');
+  }
+};
 /**
  * Query for users
- * @param {Object} filter - Mongo filter
+ * @param {Object} filter - MongoDB filter
  * @param {Object} options - Query options
  * @param {string} [options.sortBy] - Sort option in the format: sortField:(desc|asc)
  * @param {number} [options.limit] - Maximum number of results per page (default = 10)
  * @param {number} [options.page] - Current page (default = 1)
  * @returns {Promise<QueryResult>}
  */
+
 const queryUsers = async (filter, options) => {
   const users = await User.paginate(filter, options);
   return users;
@@ -60,6 +72,12 @@ const updateUserById = async (userId, updateBody) => {
   if (updateBody.email && (await User.isEmailTaken(updateBody.email, userId))) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
   }
+
+  if (updateBody.password) {
+    updateBody.passwordHash = await bcrypt.hash(updateBody.password, 8);
+    delete updateBody.password;
+  }
+
   Object.assign(user, updateBody);
   await user.save();
   return user;
@@ -79,6 +97,63 @@ const deleteUserById = async (userId) => {
   return user;
 };
 
+/**
+ * Add saved movie for user
+ * @param {ObjectId} userId
+ * @param {Object} movieData
+ * @returns {Promise<SavedMovies>}
+ */
+const addSavedMovie = async (userId, movieData) => {
+  const savedMovie = new SavedMovies({ userId, ...movieData });
+  await savedMovie.save();
+  return savedMovie;
+};
+
+/**
+ * Get saved movies for user
+ * @param {ObjectId} userId
+ * @returns {Promise<Array<SavedMovies>>}
+ */
+const getSavedMoviesByUser = async (userId) => {
+  return SavedMovies.find({ userId });
+};
+
+/**
+ * Create grouped collection for user
+ * @param {ObjectId} userId
+ * @param {Object} groupData
+ * @returns {Promise<GroupedCollections>}
+ */
+const createGroupedCollection = async (userId, groupData) => {
+  const groupedCollection = new GroupedCollections({ userId, ...groupData });
+  await groupedCollection.save();
+  return groupedCollection;
+};
+
+/**
+ * Add rating for a movie
+ * @param {ObjectId} userId
+ * @param {Object} ratingData
+ * @returns {Promise<Ratings>}
+ */
+const addRating = async (userId, ratingData) => {
+  const rating = new Ratings({ userId, ...ratingData });
+  await rating.save();
+  return rating;
+};
+
+/**
+ * Create a post
+ * @param {ObjectId} userId
+ * @param {Object} postData
+ * @returns {Promise<Posts>}
+ */
+const createPost = async (userId, postData) => {
+  const post = new Posts({ userId, ...postData });
+  await post.save();
+  return post;
+};
+
 module.exports = {
   createUser,
   queryUsers,
@@ -86,4 +161,9 @@ module.exports = {
   getUserByEmail,
   updateUserById,
   deleteUserById,
+  addSavedMovie,
+  getSavedMoviesByUser,
+  createGroupedCollection,
+  addRating,
+  createPost,
 };

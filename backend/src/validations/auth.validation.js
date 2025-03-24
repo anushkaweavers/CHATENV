@@ -1,50 +1,49 @@
 const Joi = require('joi');
-const { password } = require('./custom.validation');
 
 const register = {
-  body: Joi.object().keys({
-    email: Joi.string().required().email(),
-    password: Joi.string().required().custom(password),
-    name: Joi.string().required(),
+  body: Joi.object({
+    username: Joi.string().required().label("Username"),
+    email: Joi.string().email().required().label("Email"),
+    password: Joi.string().min(6).required().label("Password"),
   }),
 };
-
 const login = {
-  body: Joi.object().keys({
-    email: Joi.string().required(),
-    password: Joi.string().required(),
+  body: Joi.object({
+    email: Joi.string().email().required(),
+    password: Joi.string().min(6).required(),
   }),
-};
+};  
 
 const logout = {
-  body: Joi.object().keys({
+  body: Joi.object({
     refreshToken: Joi.string().required(),
   }),
 };
 
 const refreshTokens = {
-  body: Joi.object().keys({
+  body: Joi.object({
     refreshToken: Joi.string().required(),
   }),
 };
 
 const forgotPassword = {
-  body: Joi.object().keys({
+  body: Joi.object({
     email: Joi.string().email().required(),
   }),
 };
-
 const resetPassword = {
-  query: Joi.object().keys({
-    token: Joi.string().required(),
-  }),
-  body: Joi.object().keys({
-    password: Joi.string().required().custom(password),
+  body: Joi.object({
+    token: Joi.string().required().label("Token"),
+    newPassword: Joi.string().min(6).required().label("New Password"),
+    confirmPassword: Joi.string()
+      .valid(Joi.ref("newPassword"))
+      .required()
+      .label("Confirm Password"),
   }),
 };
 
 const verifyEmail = {
-  query: Joi.object().keys({
+  query: Joi.object({
     token: Joi.string().required(),
   }),
 };

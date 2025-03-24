@@ -1,123 +1,147 @@
 const jwt = require('jsonwebtoken');
 const moment = require('moment');
 const httpStatus = require('http-status');
-const config = require('../config/config');
-const userService = require('./user.service');
 const { Token } = require('../models');
+const config = require('../config/config');
 const ApiError = require('../utils/ApiError');
 const { tokenTypes } = require('../config/tokens');
 
 /**
- * Generate token
- * @param {ObjectId} userId
- * @param {Moment} expires
- * @param {string} type
- * @param {string} [secret]
- * @returns {string}
+ * Generate a JWT token.
+ * @param {string} userId - The user ID.
+ * @param {moment.Moment} expires - Expiration time.
+ * @param {string} type - Token type (e.g., ACCESS, REFRESH).
+ * @param {string} secret - JWT secret key.
+ * @returns {string} - The generated token.
  */
 const generateToken = (userId, expires, type, secret = config.jwt.secret) => {
-  const payload = {
-    sub: userId,
-    iat: moment().unix(),
-    exp: expires.unix(),
-    type,
-  };
+  const payload = { userId, type, iat: moment().unix(), exp: expires.unix() };
   return jwt.sign(payload, secret);
 };
 
 /**
- * Save a token
- * @param {string} token
- * @param {ObjectId} userId
- * @param {Moment} expires
- * @param {string} type
- * @param {boolean} [blacklisted]
- * @returns {Promise<Token>}
- */
-const saveToken = async (token, userId, expires, type, blacklisted = false) => {
-  const tokenDoc = await Token.create({
-    token,
-    user: userId,
-    expires: expires.toDate(),
-    type,
-    blacklisted,
-  });
-  return tokenDoc;
-};
-
-/**
- * Verify token and return token doc (or throw an error if it is not valid)
- * @param {string} token
- * @param {string} type
- * @returns {Promise<Token>}
- */
-const verifyToken = async (token, type) => {
-  const payload = jwt.verify(token, config.jwt.secret);
-  const tokenDoc = await Token.findOne({ token, type, user: payload.sub, blacklisted: false });
-  if (!tokenDoc) {
-    throw new Error('Token not found');
-  }
-  return tokenDoc;
-};
-
-/**
- * Generate auth tokens
- * @param {User} user
- * @returns {Promise<Object>}
+ * Generate authentication tokens (access and refresh tokens).
+ * @param {Object} user - The user object.
+ * @returns {Promise<Object>} - The generated tokens.
  */
 const generateAuthTokens = async (user) => {
-  const accessTokenExpires = moment().add(config.jwt.accessExpirationMinutes, 'minutes');
-  const accessToken = generateToken(user.id, accessTokenExpires, tokenTypes.ACCESS);
+  const accessExpires = moment().add(config.jwt.accessExpirationMinutes, 'minutes');
+  const accessToken = generateToken(user.id, accessExpires, tokenTypes.ACCESS);
 
-  const refreshTokenExpires = moment().add(config.jwt.refreshExpirationDays, 'days');
-  const refreshToken = generateToken(user.id, refreshTokenExpires, tokenTypes.REFRESH);
-  await saveToken(refreshToken, user.id, refreshTokenExpires, tokenTypes.REFRESH);
+  const refreshExpires = moment().add(config.jwt.refreshExpirationDays, 'days');
+  const refreshToken = generateToken(user.id, refreshExpires, tokenTypes.REFRESH);
 
-  return {
-    access: {
-      token: accessToken,
-      expires: accessTokenExpires.toDate(),
-    },
-    refresh: {
-      token: refreshToken,
-      expires: refreshTokenExpires.toDate(),
-    },
-  };
+  // Save the refresh token to the database
+  await Token.create({ token: refreshToken, user: user.id, type: tokenTypes.REFRESH, expires: refreshExpires.toDate() });
+
+  return { accessToken, refreshToken };
 };
 
 /**
- * Generate reset password token
- * @param {string} email
- * @returns {Promise<string>}
+ * Invalidate a token by marking it as invalidated in the database.
+ * @param {string} token - The token to invalidate.
+ * @returns {Promise<boolean>} - True if the token was invalidated successfully.
+ * @throws {ApiError} - If the token is already invalidated or an error occurs.
  */
-const generateResetPasswordToken = async (email) => {
-  const user = await userService.getUserByEmail(email);
-  if (!user) {
-    throw new ApiError(httpStatus.NOT_FOUND, 'No users found with this email');
+const invalidateToken = async (token) => {
+  try {
+    const result = await Token.findOneAndUpdate(
+      { token, invalidated: { $ne: true } },
+      { $set: { invalidated: true, expires: moment().toDate() } },
+      { new: true, upsert: false }
+    );
+
+    if (!result) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Token is already invalidated');
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Error invalidating token:', err);
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Error invalidating token');
   }
-  const expires = moment().add(config.jwt.resetPasswordExpirationMinutes, 'minutes');
+};
+
+/**
+ * Refresh authentication tokens using a valid refresh token.
+ * @param {string} refreshToken - The refresh token.
+ * @returns {Promise<Object>} - The new access token.
+ * @throws {ApiError} - If the refresh token is invalid or expired.
+ */
+const refreshAuth = async (refreshToken) => {
+  try {
+    // Verify the refresh token
+    const payload = jwt.verify(refreshToken, config.jwt.secret);
+    if (payload.type !== tokenTypes.REFRESH) {
+      throw new ApiError(httpStatus.UNAUTHORIZED, 'Invalid token type');
+    }
+
+    // Check if the token exists in the database and is not invalidated
+    const tokenDoc = await Token.findOne({ token: refreshToken, type: tokenTypes.REFRESH, invalidated: false });
+    if (!tokenDoc) {
+      throw new ApiError(httpStatus.UNAUTHORIZED, 'Invalid refresh token');
+    }
+
+    // Generate a new access token
+    const accessExpires = moment().add(config.jwt.accessExpirationMinutes, 'minutes');
+    const accessToken = generateToken(payload.userId, accessExpires, tokenTypes.ACCESS);
+
+    return { accessToken };
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    if (error.name === 'TokenExpiredError') {
+      throw new ApiError(httpStatus.UNAUTHORIZED, 'Refresh token has expired');
+    }
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Invalid refresh token');
+  }
+};
+
+/**
+ * Generate a reset password token.
+ * @param {Object} user - The user object.
+ * @returns {Promise<string>} - The generated reset password token.
+ */
+const generateResetPasswordToken = async (user) => {
+  const expires = moment().add(1, 'hour');
   const resetPasswordToken = generateToken(user.id, expires, tokenTypes.RESET_PASSWORD);
-  await saveToken(resetPasswordToken, user.id, expires, tokenTypes.RESET_PASSWORD);
+
+  await Token.create({
+    token: resetPasswordToken,
+    user: user.id,
+    type: tokenTypes.RESET_PASSWORD,
+    expires: expires.toDate(),
+  });
+
   return resetPasswordToken;
 };
 
 /**
- * Generate verify email token
- * @param {User} user
- * @returns {Promise<string>}
+ * Verify a reset password token.
+ * @param {string} token - The reset password token.
+ * @returns {Promise<Object>} - The decoded token payload.
+ * @throws {ApiError} - If the token is invalid or expired.
  */
-const generateVerifyEmailToken = async (user) => {
-  const expires = moment().add(config.jwt.verifyEmailExpirationMinutes, 'minutes');
-  const verifyEmailToken = generateToken(user.id, expires, tokenTypes.VERIFY_EMAIL);
-  await saveToken(verifyEmailToken, user.id, expires, tokenTypes.VERIFY_EMAIL);
-  return verifyEmailToken;
+const verifyResetPasswordToken = async (token) => {
+  try {
+    const payload = jwt.verify(token, config.jwt.secret);
+    if (payload.type !== tokenTypes.RESET_PASSWORD) {
+      throw new ApiError(httpStatus.UNAUTHORIZED, 'Invalid token type');
+    }
+    return payload;
+  } catch (error) {
+    console.error('Token verification failed:', error.message);
+    if (error.name === 'TokenExpiredError') {
+      throw new ApiError(httpStatus.UNAUTHORIZED, 'Reset password token has expired');
+    }
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Invalid reset password token');
+  }
 };
 
 module.exports = {
   generateToken,
-  saveToken,
-  verifyToken,
   generateAuthTokens,
+  invalidateToken,
+  refreshAuth,
   generateResetPasswordToken,
-  generateVerifyEmailToken,
+  verifyResetPasswordToken,
 };
