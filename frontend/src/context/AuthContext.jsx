@@ -1,5 +1,6 @@
 import { createContext, useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import apiClient from '../api/apiClient';
 
 const AuthContext = createContext();
 
@@ -10,22 +11,11 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
-      const response = await fetch('http://localhost:3000/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setUser(data.user);
-        setToken(data.token);
-        navigate('/');
-      } else {
-        throw new Error(data.message || 'Login failed');
-      }
+      const response = await apiClient.post('auth/login', credentials);
+      setUser(response.user);
+      setToken(response.token);
+      localStorage.setItem('token', response.token);
+      return response; // Return the response for the component to handle
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -34,20 +24,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const response = await fetch('http://localhost:3000/v1/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        navigate('/login');
-      } else {
-        throw new Error(data.message || 'Registration failed');
-      }
+      await apiClient.post('auth/register', userData);
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -57,6 +34,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     setToken(null);
+    localStorage.removeItem('token');
     navigate('/login');
   };
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Button, TextField, Box, Typography, Container, Link } from '@mui/material';
+import { Button, TextField, Box, Typography, Container, Link, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 
 const Login = () => {
   const [credentials, setCredentials] = useState({
@@ -9,6 +9,7 @@ const Login = () => {
     password: '',
   });
   const [error, setError] = useState('');
+  const [openDialog, setOpenDialog] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -23,9 +24,15 @@ const Login = () => {
     e.preventDefault();
     try {
       await login(credentials);
+      setOpenDialog(true);  // Show dialog on success
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Login failed. Please try again.');
     }
+  };
+
+  const handleClose = () => {
+    setOpenDialog(false);
+    navigate('/');  // Redirect to home after dialog is closed
   };
 
   return (
@@ -86,6 +93,19 @@ const Login = () => {
           </Box>
         </Box>
       </Box>
+
+      {/* Success Dialog */}
+      <Dialog open={openDialog} onClose={handleClose}>
+        <DialogTitle>Login Successful</DialogTitle>
+        <DialogContent>
+          <Typography>Welcome back! You will be redirected to the home page.</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose} autoFocus variant="contained">
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
