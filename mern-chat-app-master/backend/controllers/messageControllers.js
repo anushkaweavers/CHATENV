@@ -23,20 +23,34 @@ const allMessages = asyncHandler(async (req, res) => {
 //@access          Protected
 const sendMessage = asyncHandler(async (req, res) => {
   const { content, chatId } = req.body;
+  const files = req.files; // Media files
 
-  if (!content || !chatId) {
+  if (!content && (!files || files.length === 0)) {
     console.log("Invalid data passed into request");
     return res.sendStatus(400);
   }
 
-  var newMessage = {
+  let mediaFiles = [];
+  
+  // Upload files to Cloudinary
+  if (files && files.length > 0) {
+    mediaFiles = await Promise.all(
+      files.map(async (file) => {
+        const result = await uploadToCloudinary(file.buffer, file.mimetype);
+        return { url: result.secure_url, type: file.mimetype.split("/")[0] };
+      })
+    );
+  }
+
+  const newMessage = new Message({
     sender: req.user._id,
-    content: content,
+    content: content || "", // Emojis supported automatically
     chat: chatId,
-  };
+    media: mediaFiles, // Attach uploaded media
+  });
 
   try {
-    var message = await Message.create(newMessage);
+    let message = await newMessage.save();
 
     message = await message.populate("sender", "name pic").execPopulate();
     message = await message.populate("chat").execPopulate();
