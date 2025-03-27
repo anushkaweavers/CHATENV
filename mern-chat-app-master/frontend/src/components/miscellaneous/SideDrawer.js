@@ -20,7 +20,7 @@ import { Tooltip } from "@chakra-ui/tooltip";
 import { BellIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { Avatar } from "@chakra-ui/avatar";
 import { useHistory } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useToast } from "@chakra-ui/toast";
 import ChatLoading from "../ChatLoading";
@@ -31,6 +31,24 @@ import { Effect } from "react-notification-badge";
 import { getSender } from "../../config/ChatLogics";
 import UserListItem from "../userAvatar/UserListItem";
 import { ChatState } from "../../Context/ChatProvider";
+
+// Custom debounce hook
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  const timerRef = useRef();
+
+  useEffect(() => {
+    timerRef.current = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timerRef.current);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 function SideDrawer() {
   const [search, setSearch] = useState("");
@@ -51,23 +69,23 @@ function SideDrawer() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const history = useHistory();
 
+  // Use our custom debounce hook with 500ms delay
+  const debouncedSearch = useDebounce(search, 500);
+
   const logoutHandler = () => {
     localStorage.removeItem("userInfo");
     history.push("/");
   };
 
-  const handleSearch = async () => {
-    if (!search) {
-      toast({
-        title: "Please Enter something in search",
-        status: "warning",
-        duration: 5000,
-        isClosable: true,
-        position: "top-left",
-      });
-      return;
+  useEffect(() => {
+    if (debouncedSearch) {
+      handleSearch();
+    } else {
+      setSearchResult([]);
     }
+  }, [debouncedSearch]);
 
+  const handleSearch = async () => {
     try {
       setLoading(true);
 
@@ -79,23 +97,27 @@ function SideDrawer() {
 
       const { data } = await axios.get(`/api/user?search=${search}`, config);
 
+      // Filter out the logged-in user from search results
+      const filteredResults = data.filter(
+        (resultUser) => resultUser._id !== user._id
+      );
+      
       setLoading(false);
-      setSearchResult(data);
+      setSearchResult(filteredResults);
     } catch (error) {
       toast({
-        title: "Error Occured!",
+        title: "Error Occurred!",
         description: "Failed to Load the Search Results",
         status: "error",
         duration: 5000,
         isClosable: true,
         position: "bottom-left",
       });
+      setLoading(false);
     }
   };
 
   const accessChat = async (userId) => {
-    console.log(userId);
-
     try {
       setLoadingChat(true);
       const config = {
@@ -202,7 +224,6 @@ function SideDrawer() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
-              <Button onClick={handleSearch}>Go</Button>
             </Box>
             {loading ? (
               <ChatLoading />

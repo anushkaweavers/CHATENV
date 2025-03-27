@@ -116,10 +116,10 @@ const Signup = () => {
     if (pics.type === "image/jpeg" || pics.type === "image/png") {
       const data = new FormData();
       data.append("file", pics);
-      data.append("upload_preset", "chat-app");
-      data.append("cloud_name", "piyushproj");
+      data.append("upload_preset", "anushka_2");
+      data.append("cloud_name", "dqwb01qwt");
       
-      fetch("https://api.cloudinary.com/v1_1/piyushproj/image/upload", {
+      fetch("https://api.cloudinary.com/v1_1/dqwb01qwt/image/upload", {
         method: "post",
         body: data,
       })
