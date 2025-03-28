@@ -32,7 +32,6 @@ import { SearchIcon, AddIcon } from "@chakra-ui/icons";
 import axios from "axios";
 import { useState, useEffect } from "react";
 import { ChatState } from "../../Context/ChatProvider";
-import UserBadgeItem from "../userAvatar/UserBadgeItem";
 import UserListItem from "../userAvatar/UserListItem";
 
 const GroupChatModal = ({ children }) => {

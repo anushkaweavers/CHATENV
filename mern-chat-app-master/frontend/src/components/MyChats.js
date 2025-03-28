@@ -8,12 +8,11 @@ import ChatLoading from "./ChatLoading";
 import GroupChatModal from "./miscellaneous/GroupChatModal";
 import { Button, IconButton, Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/react";
 import { ChatState } from "../Context/ChatProvider";
-import { useDisclosure } from "@chakra-ui/react";
 
 const MyChats = ({ fetchAgain }) => {
   const [loggedUser, setLoggedUser] = useState();
   const [isLoading, setIsLoading] = useState(false);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+
   
   const { selectedChat, setSelectedChat, user, chats, setChats } = ChatState();
   const toast = useToast();
