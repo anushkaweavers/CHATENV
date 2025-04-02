@@ -33,7 +33,6 @@ const Signup = () => {
   const [pic, setPic] = useState();
   const [picLoading, setPicLoading] = useState(false);
 
-  // Color mode values
   const bgColor = useColorModeValue("gray.50", "gray.800");
   const cardBg = useColorModeValue("white", "gray.700");
   const textColor = useColorModeValue("gray.600", "gray.300");
@@ -77,9 +76,8 @@ const Signup = () => {
       
       toast({
         title: "Registration Successful!",
-        description: "Welcome to our community!",
         status: "success",
-        duration: 5000,
+        duration: 3000,
         isClosable: true,
         position: "top",
       });
@@ -127,20 +125,12 @@ const Signup = () => {
         .then((data) => {
           setPic(data.url.toString());
           setPicLoading(false);
-          toast({
-            title: "Image Uploaded Successfully!",
-            status: "success",
-            duration: 3000,
-            isClosable: true,
-            position: "top",
-          });
         })
         .catch((err) => {
           console.log(err);
           setPicLoading(false);
           toast({
             title: "Image Upload Failed",
-            description: "Please try again",
             status: "error",
             duration: 5000,
             isClosable: true,
@@ -150,7 +140,6 @@ const Signup = () => {
     } else {
       toast({
         title: "Unsupported File Format",
-        description: "Please upload JPEG or PNG images only",
         status: "warning",
         duration: 5000,
         isClosable: true,
@@ -172,61 +161,63 @@ const Signup = () => {
       <Box
         w="100%"
         maxW="md"
-        p={8}
+        p={6}
         borderRadius="lg"
         boxShadow="xl"
         bg={cardBg}
       >
-        <Flex direction="column" align="center" mb={8}>
+        <Flex direction="column" align="center" mb={4}>
           <Avatar
-            size="xl"
+            size="md"
             src={pic}
-            icon={<Icon as={FaUserPlus} fontSize="2xl" />}
-            mb={4}
+            icon={<Icon as={FaUserPlus} fontSize="xl" />}
+            mb={2}
             bg="teal.500"
             color="white"
           />
-          <Heading as="h2" size="lg" color={headingColor} mb={2}>
-            Create Your Account
+          <Heading as="h2" size="lg" color={headingColor}>
+            Create Account
           </Heading>
-          <Text color={textColor}>Join our community today</Text>
+          <Text color={textColor} fontSize="sm" mt={1}>
+            Join our community
+          </Text>
         </Flex>
 
-        <VStack spacing={6}>
+        <VStack spacing={4}>
           <FormControl id="name" isRequired>
-            <FormLabel>Full Name</FormLabel>
+            <FormLabel fontSize="sm">Full Name</FormLabel>
             <Input
-              placeholder="Enter your full name"
+              placeholder="Your full name"
               onChange={(e) => setName(e.target.value)}
               focusBorderColor="teal.500"
-              variant="filled"
+              size="sm"
             />
           </FormControl>
 
           <FormControl id="email" isRequired>
-            <FormLabel>Email Address</FormLabel>
+            <FormLabel fontSize="sm">Email Address</FormLabel>
             <Input
               type="email"
               placeholder="your.email@example.com"
               onChange={(e) => setEmail(e.target.value)}
               focusBorderColor="teal.500"
-              variant="filled"
+              size="sm"
             />
           </FormControl>
 
           <FormControl id="password" isRequired>
-            <FormLabel>Password</FormLabel>
+            <FormLabel fontSize="sm">Password</FormLabel>
             <InputGroup>
               <Input
                 type={show ? "text" : "password"}
-                placeholder="Create a strong password"
+                placeholder="Create password"
                 onChange={(e) => setPassword(e.target.value)}
                 focusBorderColor="teal.500"
-                variant="filled"
+                size="sm"
               />
-              <InputRightElement>
+              <InputRightElement h="full">
                 <Button
-                  size="sm"
+                  size="xs"
                   onClick={handleClick}
                   bg="transparent"
                   _hover={{ bg: "transparent" }}
@@ -238,18 +229,18 @@ const Signup = () => {
           </FormControl>
 
           <FormControl id="confirm-password" isRequired>
-            <FormLabel>Confirm Password</FormLabel>
+            <FormLabel fontSize="sm">Confirm Password</FormLabel>
             <InputGroup>
               <Input
                 type={show ? "text" : "password"}
-                placeholder="Re-enter your password"
+                placeholder="Confirm password"
                 onChange={(e) => setConfirmpassword(e.target.value)}
                 focusBorderColor="teal.500"
-                variant="filled"
+                size="sm"
               />
-              <InputRightElement>
+              <InputRightElement h="full">
                 <Button
-                  size="sm"
+                  size="xs"
                   onClick={handleClick}
                   bg="transparent"
                   _hover={{ bg: "transparent" }}
@@ -261,11 +252,11 @@ const Signup = () => {
           </FormControl>
 
           <FormControl id="pic">
-            <FormLabel>Profile Picture</FormLabel>
+            <FormLabel fontSize="sm">Profile Picture</FormLabel>
             <InputGroup>
               <Input
                 type="file"
-                p={2}
+                p={1}
                 accept="image/*"
                 onChange={(e) => postDetails(e.target.files[0])}
                 hidden
@@ -279,25 +270,21 @@ const Signup = () => {
                 variant="outline"
                 colorScheme="teal"
                 cursor="pointer"
+                size="sm"
               >
                 {pic ? "Change Image" : "Upload Image"}
               </Button>
             </InputGroup>
-            {picLoading && (
-              <Text fontSize="sm" color="teal.500" mt={2}>
-                Uploading...
-              </Text>
-            )}
           </FormControl>
 
           <Button
             colorScheme="teal"
             width="full"
-            mt={4}
+            mt={2}
             onClick={submitHandler}
             isLoading={picLoading}
             loadingText="Creating Account..."
-            size="lg"
+            size="sm"
             leftIcon={<Icon as={FaUserPlus} />}
           >
             Sign Up

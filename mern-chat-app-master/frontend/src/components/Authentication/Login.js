@@ -31,7 +31,6 @@ const Login = () => {
   const history = useHistory();
   const { setUser } = ChatState();
 
-  // Color mode values
   const bgColor = useColorModeValue("gray.50", "gray.800");
   const cardBg = useColorModeValue("white", "gray.700");
   const textColor = useColorModeValue("gray.600", "gray.300");
@@ -66,9 +65,8 @@ const Login = () => {
 
       toast({
         title: "Login Successful!",
-        description: "Welcome back!",
         status: "success",
-        duration: 5000,
+        duration: 3000,
         isClosable: true,
         position: "top",
       });
@@ -102,45 +100,47 @@ const Login = () => {
       <Box
         w="100%"
         maxW="md"
-        p={8}
+        p={6}
         borderRadius="lg"
         boxShadow="xl"
         bg={cardBg}
       >
-        <Flex direction="column" align="center" mb={8}>
-          <Heading as="h2" size="lg" color={headingColor} mb={2}>
+        <Flex direction="column" align="center" mb={4}>
+          <Heading as="h2" size="lg" color={headingColor}>
             Welcome Back
           </Heading>
-          <Text color={textColor}>Sign in to continue to your account</Text>
+          <Text color={textColor} fontSize="sm" mt={1}>
+            Sign in to continue
+          </Text>
         </Flex>
 
-        <VStack spacing={6}>
+        <VStack spacing={4}>
           <FormControl id="email" isRequired>
-            <FormLabel>Email Address</FormLabel>
+            <FormLabel fontSize="sm">Email Address</FormLabel>
             <Input
               value={email}
               type="email"
               placeholder="your.email@example.com"
               onChange={(e) => setEmail(e.target.value)}
               focusBorderColor="teal.500"
-              variant="filled"
+              size="sm"
             />
           </FormControl>
 
           <FormControl id="password" isRequired>
-            <FormLabel>Password</FormLabel>
+            <FormLabel fontSize="sm">Password</FormLabel>
             <InputGroup>
               <Input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 type={show ? "text" : "password"}
-                placeholder="Enter your password"
+                placeholder="Enter password"
                 focusBorderColor="teal.500"
-                variant="filled"
+                size="sm"
               />
-              <InputRightElement>
+              <InputRightElement h="full">
                 <Button
-                  size="sm"
+                  size="xs"
                   onClick={handleClick}
                   bg="transparent"
                   _hover={{ bg: "transparent" }}
@@ -154,11 +154,11 @@ const Login = () => {
           <Button
             colorScheme="teal"
             width="full"
-            mt={4}
+            mt={2}
             onClick={submitHandler}
             isLoading={loading}
             loadingText="Signing In..."
-            size="lg"
+            size="sm"
             leftIcon={<Icon as={FaSignInAlt} />}
           >
             Login
@@ -166,8 +166,9 @@ const Login = () => {
 
           <Button
             variant="outline"
-            colorScheme="red"
+            colorScheme="teal"
             width="full"
+            size="sm"
             onClick={() => {
               setEmail("guest@example.com");
               setPassword("123456");
@@ -178,12 +179,13 @@ const Login = () => {
           </Button>
         </VStack>
 
-        <Flex mt={6} justifyContent="center">
+        <Flex mt={4} justifyContent="center">
           <Text color={textColor} fontSize="sm">
-            Don't have an account?{" "}
+            New user?{" "}
             <Button
               variant="link"
               color="teal.500"
+              size="sm"
               onClick={() => history.push("/signup")}
             >
               Sign up

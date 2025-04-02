@@ -15,7 +15,6 @@ import Signup from "../components/Authentication/Signup";
 
 function Homepage() {
   const history = useHistory();
-
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("userInfo"));
 
@@ -25,12 +24,13 @@ function Homepage() {
   return (
     <Container maxW="xl" centerContent>
       <Box
-        d="flex"
+        display="flex"
         justifyContent="center"
         p={3}
         bg="white"
         w="100%"
-        m="40px 0 15px 0"
+        mt="20px"
+        mb="10px" // Adjusted spacing
         borderRadius="lg"
         borderWidth="1px"
       >
@@ -40,15 +40,15 @@ function Homepage() {
       </Box>
       <Box bg="white" w="100%" p={4} borderRadius="lg" borderWidth="1px">
         <Tabs isFitted variant="soft-rounded">
-          <TabList mb="1em">
+          <TabList mb="0px"> 
             <Tab>Login</Tab>
             <Tab>Sign Up</Tab>
           </TabList>
           <TabPanels>
-            <TabPanel>
+            <TabPanel p={2}> 
               <Login />
             </TabPanel>
-            <TabPanel>
+            <TabPanel p={2}>
               <Signup />
             </TabPanel>
           </TabPanels>
