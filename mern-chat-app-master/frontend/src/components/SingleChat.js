@@ -93,7 +93,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
           "/api/message",
           {
             content: newMessage,
-            chatId: selectedChat,
+            chatId: selectedChat._id, // Make sure this is correct
           },
           config
         );
@@ -131,26 +131,31 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     selectedChatCompare = selectedChat;
   }, [selectedChat]);
 
-  useEffect(() => {
-    socket.on("message recieved", (newMessageRecieved) => {
-      if (
-        !selectedChatCompare ||
-        selectedChatCompare._id !== newMessageRecieved.chat._id
-      ) {
-        if (!notification.includes(newMessageRecieved)) {
-          setNotification([newMessageRecieved, ...notification]);
-          setFetchAgain(!fetchAgain);
-        }
-      } else {
-        setMessages([...messages, newMessageRecieved]);
+ // In SingleChat.js
+useEffect(() => {
+  socket.on("message recieved", (newMessageRecieved) => {
+    if (
+      !selectedChatCompare ||
+      selectedChatCompare._id !== newMessageRecieved.chat._id
+    ) {
+      // Check if notification already exists
+      const isNotificationExists = notification.some(
+        (n) => n._id === newMessageRecieved._id
+      );
+      
+      if (!isNotificationExists) {
+        setNotification([newMessageRecieved, ...notification]);
+        setFetchAgain(!fetchAgain);
       }
-    });
-
-    return () => {
-      socket.off("message recieved");
-    };
+    } else {
+      setMessages([...messages, newMessageRecieved]);
+    }
   });
 
+  return () => {
+    socket.off("message recieved");
+  };
+}, [messages, notification, fetchAgain]); // Add dependencies
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -305,7 +310,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 <Lottie
                   options={defaultOptions}
                   width={50}
-                  style={{ margin: 0 }}
+                  style={{ margin:0}}
                 />
               </Box>
             )}
