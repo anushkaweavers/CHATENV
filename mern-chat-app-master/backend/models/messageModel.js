@@ -13,7 +13,7 @@ const messageSchema = mongoose.Schema(
       },
     ],
   },
-  { timestamps: true }
+  {timestamp:true}
 );
 
 const Message = mongoose.model("Message", messageSchema);

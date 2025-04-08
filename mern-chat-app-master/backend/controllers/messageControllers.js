@@ -3,9 +3,6 @@ const Message = require("../models/messageModel");
 const User = require("../models/userModel");
 const Chat = require("../models/chatModel");
 
-//@description     Get all Messages
-//@route           GET /api/Message/:chatId
-//@access          Protected
 const allMessages = asyncHandler(async (req, res) => {
   try {
     const messages = await Message.find({ chat: req.params.chatId })
@@ -18,9 +15,6 @@ const allMessages = asyncHandler(async (req, res) => {
   }
 });
 
-//@description     Create New Message
-//@route           POST /api/Message/
-//@access          Protected
 const sendMessage = asyncHandler(async (req, res) => {
   const { content, chatId } = req.body;
   const files = req.files; // Media files
@@ -32,7 +26,6 @@ const sendMessage = asyncHandler(async (req, res) => {
 
   let mediaFiles = [];
   
-  // Upload files to Cloudinary
   if (files && files.length > 0) {
     mediaFiles = await Promise.all(
       files.map(async (file) => {
@@ -44,9 +37,9 @@ const sendMessage = asyncHandler(async (req, res) => {
 
   const newMessage = new Message({
     sender: req.user._id,
-    content: content || "", // Emojis supported automatically
+    content: content || "",
     chat: chatId,
-    media: mediaFiles, // Attach uploaded media
+    media: mediaFiles, 
   });
 
   try {
