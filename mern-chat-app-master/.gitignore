@@ -1,5 +1,20 @@
-/node_modules
+# Node modules
 node_modules/
-/frontend/node_modules/
+
+
+# Environment files
 .env
-/backend/node_modules
+
+# Lock files
+yarn.lock
+
+# Log files
+*.log
+
+# Build output
+frontend/build/
+dist/
+
+# OS-specific
+.DS_Store
+Thumbs.db
