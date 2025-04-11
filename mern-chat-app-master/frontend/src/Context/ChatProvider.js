@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useHistory } from "react-router-dom";
 import io from "socket.io-client";
 
@@ -10,38 +10,46 @@ const ChatProvider = ({ children }) => {
   const [user, setUser] = useState();
   const [notification, setNotification] = useState([]);
   const [chats, setChats] = useState();
-  const [socket, setSocket] = useState(null);
   const [socketConnected, setSocketConnected] = useState(false);
-
+  
+  const socketRef = useRef(null); // Single socket instance reference
   const history = useHistory();
 
+  // Initialize user from localStorage
   useEffect(() => {
     const userInfo = JSON.parse(localStorage.getItem("userInfo"));
     setUser(userInfo);
-
     if (!userInfo) history.push("/");
   }, [history]);
 
-  // Initialize socket connection
+  // Socket initialization and cleanup
   useEffect(() => {
-    if (user) {
-      const newSocket = io(ENDPOINT, {
+    if (user && !socketRef.current) {
+      socketRef.current = io(ENDPOINT, {
         transports: ["websocket"],
         withCredentials: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
       });
 
-      setSocket(newSocket);
-
       // Setup event listeners
-      newSocket.emit("setup", user);
-      newSocket.on("connected", () => setSocketConnected(true));
-
-      return () => {
-        newSocket.disconnect();
-        newSocket.off("connected");
-      };
+      socketRef.current.emit("setup", user);
+      socketRef.current.on("connected", () => setSocketConnected(true));
+      socketRef.current.on("disconnect", () => setSocketConnected(false));
     }
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current.removeAllListeners();
+        socketRef.current = null;
+        setSocketConnected(false);
+      }
+    };
   }, [user]);
+
+  // Provide socket via context
+  const getSocket = () => socketRef.current;
 
   return (
     <ChatContext.Provider
@@ -54,7 +62,7 @@ const ChatProvider = ({ children }) => {
         setNotification,
         chats,
         setChats,
-        socket,
+        socket: getSocket(), // Provide current socket instance
         socketConnected,
       }}
     >

@@ -74,7 +74,6 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       });
     }
   };
-
   const sendMessage = async (event) => {
     if (event.key === "Enter" && newMessage) {
       socket?.emit("stop typing", selectedChat._id);
@@ -108,7 +107,6 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       }
     }
   };
-
   useEffect(() => {
     fetchMessages();
 
@@ -121,7 +119,6 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       clearTimeout(typingTimeoutRef.current);
     };
   }, [selectedChat]);
-
   useEffect(() => {
     if (!socket) return;
 
@@ -159,13 +156,11 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
     if (!socketConnected || !socket) return;
 
-    // Typing indicator logic
     if (!typing) {
       setTyping(true);
       socket.emit("typing", selectedChat._id);
     }
 
-    // Clear previous timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
@@ -176,7 +171,6 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       setTyping(false);
     }, 3000);
   };
-
   return (
     <>
       {selectedChat ? (
